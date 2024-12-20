@@ -1,42 +1,51 @@
 import React, { useState } from 'react';
 import { uploadImage } from '../services/api.ts';
-// import '../styles/ImageUpload.css'
 
-const ImageUpload = () => {
-  const [image, setImage] = useState<File | null>(null); //초기값 Null
-  const [result, setResult] = useState<any>(null);
+const ImageUpload: React.FC = () => {
+  const [file, setFile] = useState<File | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [detectedItems, setDetectedItems] = useState<any[]>([]);
 
-  //이미지 업로드 처리
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => { //<input> 태그에서 발생하는 이벤트를 처리하기 위한 타입
-    if (event.target.files) { //업로드된 파일 목록을 가져옴
-      setImage(event.target.files[0]); //여러 파일 중 첫 번째 파일을 상태로 저장, image 상태를 업데이트
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0]);
     }
   };
 
-  const handleSubmit = async () => {
-    if (image) { //파일이 선택 되었다면
-      const data = await uploadImage(image);
-      console.log(data);
-      setResult(data);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (file) {
+      try {
+        const response = await uploadImage(file);
+        setResult(`data:image/png;base64,${response.image}`);
+        setDetectedItems(response.detected_items);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
     }
   };
 
-  //UI 렌더링
   return (
-    <div className="uploadSection">
-      <input className="input" type="file" accept="image/*" onChange={handleImageUpload} />
-      <button className="button" onClick={handleSubmit}>분석하기</button>
-
+    <div>
+      <form className="uploadSection" onSubmit={handleSubmit}>
+        <input className="input" type="file" onChange={handleFileChange} accept="image/*" />
+        <button className="button" type="submit" disabled={!file}>Upload</button>
+      </form>
       {result && (
         <div className="resultSection">
-          <h3>분석 결과</h3>
-          <ul>
-            {result.detections.map((item: { class: string; confidence: number }, index: number) => (
-              <li key={index}>
-                {item.class} - {item.confidence} ({result.guides[index]})
-              </li>
-            ))}
-          </ul>
+          <img src={result} alt="Result" style={{ maxWidth: '40vw' }} />
+          <h3>탐지된 객체</h3>
+          <div className="resultSection2">
+            <ul>
+              {detectedItems.map((item, index) => (
+                <li key={index}>
+                  <strong>객체:</strong> {item.label} <br />
+                  <strong>신뢰도:</strong> {(item.confidence * 100).toFixed(2)}% <br />
+                  <strong>분리배출 방법:</strong> {item.recycling_tip}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </div>
@@ -44,7 +53,3 @@ const ImageUpload = () => {
 };
 
 export default ImageUpload;
-
-// 사용자가 이미지를 선택 → handleImageUpload 실행 → 선택한 이미지 파일을 image 상태에 저장.
-// 사용자가 버튼 클릭 → handleSubmit 실행 → 이미지를 서버로 전송.
-// 서버의 응답을 받아 콘솔에 출력.
