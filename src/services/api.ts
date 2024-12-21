@@ -3,7 +3,7 @@ export const uploadImage = async (file: File): Promise<any> => {
   formData.append("file", file);
 
   try {
-    const response = await fetch("https://91c4-34-32-144-197.ngrok-free.app/predict", {
+    const response = await fetch("https://95c2-35-240-185-186.ngrok-free.app/predict", {
       method: "POST",
       body: formData,
     });
